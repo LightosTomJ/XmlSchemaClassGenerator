@@ -1,8 +1,136 @@
-﻿
+﻿using System;
+using XmlSchemaClassGenerator.Enums;
+
 namespace XmlSchemaClassGenerator.SQL
 {
     public static class ConvertTypes
     {
+        public static Enums.SQLDataType SQLToBase(string baseType)
+        {
+            try
+            {
+                if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+                else if (baseType == "")
+                {
+
+                    return SQLDataType.NVARCHAR_MAX_;
+                }
+
+                else
+                {
+                    return SQLDataType.BIT;
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return SQLDataType.NVARCHAR_MAX_;
+        }
+
         public static string SystemToBase(string systemType)
         {
             switch (systemType)

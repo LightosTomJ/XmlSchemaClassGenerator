@@ -254,6 +254,6 @@ namespace XmlSchemaClassGenerator
         /// Determines the file type that is to be created
         /// Default is C#
         /// </summary>
-        public Enums.ClassType OutputType { get; set; } = Enums.ClassType.CSharp;
+        public Enums.OutputType OutputType { get; set; } = Enums.OutputType.CSharp;
     }
 }

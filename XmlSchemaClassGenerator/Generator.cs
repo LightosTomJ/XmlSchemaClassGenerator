@@ -223,7 +223,7 @@ namespace XmlSchemaClassGenerator
             set { _configuration.SeparateClasses = value; }
         }
 
-        public Enums.ClassType OutputType
+        public Enums.OutputType OutputType
         {
             get { return _configuration.OutputType; }
             set { _configuration.OutputType = value; }
@@ -259,7 +259,7 @@ namespace XmlSchemaClassGenerator
 
             var m = new ModelBuilder(_configuration, set);
             var namespaces = m.GenerateCode();
-            if (_configuration.OutputType == Enums.ClassType.CSharp)
+            if (_configuration.OutputType == Enums.OutputType.CSharp)
             {
                 var writer = _configuration.OutputWriter ?? new FileOutputWriter(OutputFolder ?? ".") { Configuration = _configuration };
                 foreach (var ns in namespaces)

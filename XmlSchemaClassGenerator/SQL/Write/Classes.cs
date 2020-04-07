@@ -3,6 +3,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using XmlSchemaClassGenerator.SQL.Components;
 using XmlSchemaClassGenerator.Validation;
 
 namespace XmlSchemaClassGenerator.SQL.Write
@@ -52,35 +53,74 @@ namespace XmlSchemaClassGenerator.SQL.Write
                 lFieldMethods.OrderBy(m => m.Name);
                 lFieldProperties.OrderBy(p => p.Name);
 
-                using (var sw = new StreamWriter(path))
+                Table t = new Table();
+                t.Name = cu.Namespaces[0].Name;
+                foreach (CodeMemberField cmf in lFieldMembers)
                 {
-                    //using
-                    lAttributeNames.ForEach(a => sw.WriteLine("using " + a + ";"));
-                    sw.WriteLine("");
-
-                    //namespace
-                    sw.WriteLine("namespace " + Namespace.NameIsValid(cu.Namespaces[0].Name));
-                    sw.WriteLine("{");
-
-                    //Custom attributes
-                    Custom.GetAttributes(ctd, lAttributeNames).ForEach(s => sw.WriteLine(Format.Tabs(1) + s));
-
-                    sw.WriteLine(Format.Tabs(1) + Declare.Class(ctd, configuration));
-                    sw.WriteLine(Format.Tabs(1) + "{");
-                    //Fields
-                    foreach (CodeMemberField f in lFieldMembers)
+                    Field f = new Field()
                     {
-                        //Custom field attributes
-                        Custom.GetFieldAttributes(f, lAttributeNames).ForEach(s => sw.WriteLine(Format.Tabs(2) + s));
-
-                        Declare.Fields(ctd, f, true, configuration).ForEach(s => sw.WriteLine(Format.Tabs(2) + s));
+                        Name = cmf.Name,
+                        AllowNull = false
+                    };
+                    if (f.Name == "Id" || f.Name == "ID")
+                    {
+                        f.IsPrimary = true;
+                        f.PrimaryInfo = new PrimaryKey();
                     }
 
-                    //Enclose class
-                    sw.WriteLine(Format.Tabs(1) + "}");
+                    f.DataType = ConvertTypes.SQLToBase(cmf.Attributes.ToString());
+                    t.Fields.Add(f);
+                }
 
-                    //Enclose Namespace
-                    sw.WriteLine("}");
+                using (var sw = new StreamWriter(path))
+                {
+                    //Create table
+                    sw.WriteLine("CREATE TABLE [" + cu.Namespaces[0].Name + "].[" + t.Name + "]");
+                    sw.WriteLine("(");
+
+                    //Create fields
+                    foreach (Field f in t.Fields)
+                    {
+                        sw.Write(Format.Tabs(1) + "[" + f.Name.ToString() + "]" );
+                        sw.Write(Format.Tabs(4) + f.DataType.ToString());
+
+                        //Allow NULL
+                        if (f.AllowNull == true)
+                        { sw.Write(Format.Tabs(3) + "NULL"); }
+                        else
+                        { sw.Write(Format.Tabs(3) + "NOT NULL"); }
+
+                        //End of line (last field?)
+                        if (t.Fields.IndexOf(f) == t.Fields.Count - 1)
+                        { sw.WriteLine(""); }
+                        else
+                        { sw.WriteLine(","); }
+                    }
+
+                    //Insert Primary Key information if it exists
+                    if (t.Fields.Count(f => f.IsPrimary == true) == 1)
+                    {
+                        if (t.Constraints.Count > 0)
+                        { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC),"); }
+                        else
+                        { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC)"); }
+                    }
+
+                    //Add constraints
+                    foreach (Constraint c in t.Constraints)
+                    {
+                        sw.Write("CONSTRAINT [FK_" + c.ChildTable + "_" + c.PrimanyTable + "] ");
+                        sw.Write("FOREIGN KEY ([" + c.ChildField + "]) ");
+                        sw.Write("REFERENCES [" + cu.Namespaces[0].Name.ToString() + "].[" + t.Name + "] (" + c.PrimanyField + "])");
+                        if (c.DeleteCascate) sw.Write(" ON DELETE CASCADE");
+                        if (c.UpdateCascade) sw.Write(" ON UPDATE CASCADE");
+                        if (t.Constraints.IndexOf(c) == t.Constraints.Count - 1)
+                        { sw.WriteLine(""); }
+                        else
+                        { sw.WriteLine(","); }
+                    }
+
+                    sw.WriteLine(");");
                     sw.Close();
                 }
             }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using XmlSchemaClassGenerator.SQL.Components;
 
 namespace XmlSchemaClassGenerator.SQL
 {
@@ -62,7 +63,8 @@ namespace XmlSchemaClassGenerator.SQL
                     cns.Types.Add(ctd);
                     Configuration?.WriteLog(path);
 
-                    
+                    Write.Classes c = new Write.Classes();
+                    c.Output(ctd, ccu, path, Configuration);
 
                     //Add new file to list
                     WrittenFiles.Add(path);

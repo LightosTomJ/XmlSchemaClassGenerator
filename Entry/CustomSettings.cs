@@ -90,7 +90,7 @@ namespace Entry
 
                     //New separate file feature
                     generator.SeparateClasses = true;
-                    generator.OutputType = ClassType.SQL;
+                    generator.OutputType = OutputType.SQL;
 
                     //Generator options
                     generator.AssemblyVisible = true;

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace XmlSchemaClassGenerator.Enums
 {
-    public enum ClassType
+    public enum OutputType
     {
         CSharp = 0,
         SQL = 1
