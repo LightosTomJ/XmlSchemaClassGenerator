@@ -5,16 +5,17 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace XmlSchemaClassGenerator
+namespace XmlSchemaClassGenerator.SQL
 {
-    public class FileOutputWriter : OutputWriter
+    public class Output : OutputWriter
     {
         public GeneratorConfiguration Configuration { get; set; }
+
         public string OutputDirectory { get; }
+
         public IList<string> WrittenFiles { get; } = new List<string>();
 
-
-        public FileOutputWriter(string directory, bool createIfNotExists = true)
+        public Output(string directory, bool createIfNotExists = true)
         {
             OutputDirectory = directory;
 
@@ -23,10 +24,6 @@ namespace XmlSchemaClassGenerator
                 Directory.CreateDirectory(OutputDirectory);
             }
         }
-
-        /// <summary>
-        /// A list of all the files written.
-        /// </summary>
 
         public override void Write(CodeNamespace cn)
         {
@@ -41,28 +38,7 @@ namespace XmlSchemaClassGenerator
             {
                 var path = Path.Combine(OutputDirectory, cn.Name + ".cs");
                 Configuration?.WriteLog(path);
-                WriteFile(path, cu);
-            }
-        }
-
-        protected virtual void WriteFile(string path, CodeCompileUnit cu)
-        {
-            FileStream fs = null;
-
-            try
-            {
-                fs = new FileStream(path, FileMode.Create);
-                using (var writer = new StreamWriter(fs))
-                {
-                    fs = null;
-                    Write(writer, cu);
-                }
-                WrittenFiles.Add(path);
-            }
-            finally
-            {
-                if (fs != null)
-                    fs.Dispose();
+                //WriteFile(path, cu);
             }
         }
 
@@ -71,17 +47,6 @@ namespace XmlSchemaClassGenerator
             try
             {
                 string dirPath = Path.Combine(OutputDirectory, Validation.Namespace.NameIsValid(cn.Name));
-                DirectoryInfo di = null;
-                //Create directory to hold the output files
-                if (Directory.Exists(dirPath))
-                {
-                    di = Directory.GetParent(dirPath);
-                }
-                else
-                {
-                    di = Directory.CreateDirectory(dirPath);
-                }
-
 
                 var ccu = new CodeCompileUnit();
                 var cns = new CodeNamespace(Validation.Namespace.NameIsValid(cn.Name));
@@ -92,11 +57,15 @@ namespace XmlSchemaClassGenerator
 
                 foreach (CodeTypeDeclaration ctd in cn.Types)
                 {
-                    string path = Path.Combine(dirPath, ctd.Name + ".cs");
+                    string path = Path.Combine(dirPath, ctd.Name + ".sql");
                     cns.Types.Clear();
                     cns.Types.Add(ctd);
                     Configuration?.WriteLog(path);
-                    WriteFile(path, ccu);
+
+                    
+
+                    //Add new file to list
+                    WrittenFiles.Add(path);
                 }
             }
             catch (Exception ae)

@@ -10,8 +10,7 @@ namespace XmlSchemaClassGenerator
     public abstract class OutputWriter
     {
         protected OutputWriter()
-        {
-        }
+        {}
 
         protected virtual CodeGeneratorOptions Options { get; } = new CodeGeneratorOptions
         {

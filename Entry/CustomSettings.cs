@@ -6,6 +6,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Schema;
 using XmlSchemaClassGenerator;
+using XmlSchemaClassGenerator.Enums;
 
 namespace Entry
 {
@@ -89,6 +90,7 @@ namespace Entry
 
                     //New separate file feature
                     generator.SeparateClasses = true;
+                    generator.OutputType = ClassType.SQL;
 
                     //Generator options
                     generator.AssemblyVisible = true;
@@ -132,7 +134,6 @@ namespace Entry
             }
             return errors;
         }
-
 
         private static List<bool> VerifyInputFiles()
         {

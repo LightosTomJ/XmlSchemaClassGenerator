@@ -249,5 +249,11 @@ namespace XmlSchemaClassGenerator
         /// Separates each classes into an individual C# file
         /// </summary>
         public bool SeparateClasses { get; set; } = false;
+
+        /// <summary>
+        /// Determines the file type that is to be created
+        /// Default is C#
+        /// </summary>
+        public Enums.ClassType OutputType { get; set; } = Enums.ClassType.CSharp;
     }
 }
