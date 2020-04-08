@@ -6,9 +6,9 @@ namespace XmlSchemaClassGenerator.SQL.Components
 {
     public class Constraint
     {
-        public string PrimanyTable { get; set; }
+        public string PrimaryTable { get; set; }
         public string ChildTable { get; set; }
-        public string PrimanyField { get; set; }
+        public string PrimaryField { get; set; }
         public string ChildField { get; set; }
         public bool UpdateCascade { get; set; }
         public bool DeleteCascate { get; set; }

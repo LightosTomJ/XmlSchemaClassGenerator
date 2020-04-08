@@ -8,12 +8,10 @@ namespace XmlSchemaClassGenerator.SQL.Components
     {
         public string Name { get; set; }
         public List<Field> Fields { get; set; }
-        public List<Constraint> Constraints { get; set; }
-
+        
         public Table()
         {
             Fields = new List<Field>();
-            Constraints = new List<Constraint>();
         }
     }
 }

@@ -10,10 +10,14 @@ namespace XmlSchemaClassGenerator.SQL.Write
 {
     public class Classes
     {
-        public bool Output(CodeTypeDeclaration ctd, CodeCompileUnit cu, string path, GeneratorConfiguration configuration)
+        public static List<Constraint> constraints = new List<Constraint>();
+        public DBRoles Output(CodeTypeDeclaration ctd, CodeCompileUnit cu, string path, GeneratorConfiguration configuration)
         {
+            DBRoles roleNamespace = new DBRoles();
             try
             {
+                roleNamespace.Name = cu.Namespaces[0].Name;
+
                 List<CodeAttributeDeclaration> lAttributes = new List<CodeAttributeDeclaration>();
                 List<CodeMemberEvent> lFieldEvents = new List<CodeMemberEvent>();
                 List<CodeMemberField> lFieldMembers = new List<CodeMemberField>();
@@ -53,83 +57,58 @@ namespace XmlSchemaClassGenerator.SQL.Write
                 lFieldMethods.OrderBy(m => m.Name);
                 lFieldProperties.OrderBy(p => p.Name);
 
-                Table t = new Table();
-                t.Name = cu.Namespaces[0].Name;
-                foreach (CodeMemberField cmf in lFieldMembers)
+                //Enums must be separated into separate table, populate and linked via foreign key reference
+                if (ctd.IsEnum)
                 {
-                    Field f = new Field()
-                    {
-                        Name = cmf.Name,
-                        AllowNull = false
-                    };
-                    if (f.Name == "Id" || f.Name == "ID")
-                    {
-                        f.IsPrimary = true;
-                        f.PrimaryInfo = new PrimaryKey();
-                    }
+                    //Create data insert deployment script
 
-                    f.DataType = ConvertTypes.SQLToBase(cmf.Attributes.ToString());
-                    t.Fields.Add(f);
+                    return null;
                 }
-
-                using (var sw = new StreamWriter(path))
+                else
                 {
-                    //Create table
-                    sw.WriteLine("CREATE TABLE [" + cu.Namespaces[0].Name + "].[" + t.Name + "]");
-                    sw.WriteLine("(");
-
-                    //Create fields
-                    foreach (Field f in t.Fields)
+                    Table t = new Table();
+                    t.Name = ctd.Name;
+                    
+                    foreach (CodeMemberField cmf in lFieldMembers)
                     {
-                        sw.Write(Format.Tabs(1) + "[" + f.Name.ToString() + "]" );
-                        sw.Write(Format.Tabs(4) + f.DataType.ToString());
+                        string fName = ConvertTypes.GetNameFromCodeMemberField(cmf);
 
-                        //Allow NULL
-                        if (f.AllowNull == true)
-                        { sw.Write(Format.Tabs(3) + "NULL"); }
-                        else
-                        { sw.Write(Format.Tabs(3) + "NOT NULL"); }
+                        Field f = new Field()
+                        {
+                            Name = fName,
+                            AllowNull = false
+                        };
 
-                        //End of line (last field?)
-                        if (t.Fields.IndexOf(f) == t.Fields.Count - 1)
-                        { sw.WriteLine(""); }
-                        else
-                        { sw.WriteLine(","); }
+                        
+                        if (fName.ToUpper() == "ID" || fName.Substring(fName.Length - 2,2).ToUpper() == "ID")
+                        {
+                            if (t.Fields.Count(fi => fi.IsPrimary == true) == 0)
+                            {
+                                f.IsPrimary = true;
+                                f.PrimaryInfo = new PrimaryKey();
+                                f.AllowNull = false;
+                            }
+                        }
+                        
+                        f.DataType = ConvertTypes.SQLToBase(cmf.Type, cmf, ctd);
+                        if (constraints != null && constraints.Count > 0)
+                        {
+                            //Sort constraints
+                        }
+
+                        t.Fields.Add(f);
                     }
 
-                    //Insert Primary Key information if it exists
-                    if (t.Fields.Count(f => f.IsPrimary == true) == 1)
-                    {
-                        if (t.Constraints.Count > 0)
-                        { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC),"); }
-                        else
-                        { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC)"); }
-                    }
-
-                    //Add constraints
-                    foreach (Constraint c in t.Constraints)
-                    {
-                        sw.Write("CONSTRAINT [FK_" + c.ChildTable + "_" + c.PrimanyTable + "] ");
-                        sw.Write("FOREIGN KEY ([" + c.ChildField + "]) ");
-                        sw.Write("REFERENCES [" + cu.Namespaces[0].Name.ToString() + "].[" + t.Name + "] (" + c.PrimanyField + "])");
-                        if (c.DeleteCascate) sw.Write(" ON DELETE CASCADE");
-                        if (c.UpdateCascade) sw.Write(" ON UPDATE CASCADE");
-                        if (t.Constraints.IndexOf(c) == t.Constraints.Count - 1)
-                        { sw.WriteLine(""); }
-                        else
-                        { sw.WriteLine(","); }
-                    }
-
-                    sw.WriteLine(");");
-                    sw.Close();
+                    roleNamespace.Tables.Add(t);
                 }
             }
             catch (Exception ae)
             {
                 string s = ae.ToString();
-                return false;
+                return null;
             }
-            return true;
+            roleNamespace.Constraints = constraints;
+            return roleNamespace;
         }
     }
 }

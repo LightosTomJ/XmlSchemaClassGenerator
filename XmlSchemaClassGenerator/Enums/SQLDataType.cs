@@ -40,6 +40,7 @@ namespace XmlSchemaClassGenerator.Enums
         UNIQUEIDENTIFIER = 32,
         XML = 33,
         CURSOR = 34,
-        TABLE = 35
+        TABLE = 35,
+        OTHER = 36
     }
 }
