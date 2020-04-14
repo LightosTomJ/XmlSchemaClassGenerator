@@ -43,6 +43,28 @@ namespace XmlSchemaClassGenerator.SQL
             }
         }
 
+        public override void Write(List<CodeNamespace> lcn)
+        {
+            
+            WriteSeparateFiles(lcn);
+            //foreach (CodeNamespace cn in lcn)
+            //{
+            //    if (Configuration.SeparateClasses == true)
+            //    {
+            //        WriteSeparateFiles(cn);
+            //    }
+            //    else
+            //    {
+            //        var cu = new CodeCompileUnit();
+            //        cu.Namespaces.Add(cn);
+
+            //        var path = Path.Combine(OutputDirectory, cn.Name + ".cs");
+            //        Configuration?.WriteLog(path);
+            //        //WriteFile(path, cu);
+            //    }
+            //}
+        }
+
         private void WriteSeparateFiles(CodeNamespace cn)
         {
             List<DBRoles> dbRoles = new List<DBRoles>();
@@ -81,12 +103,14 @@ namespace XmlSchemaClassGenerator.SQL
 
                 foreach (DBRoles d in dbLocalRoles)
                 {
-                    db.Tables.AddRange(d.Tables);
-                    db.Constraints.AddRange(d.Constraints);
+                    db.Schemas.AddRange(d.Schemas);
+                    //db.Keys.AddRange(d.Keys);
                 }
 
+
+
                 List<bool> WrittenSuccess = new List<bool>();
-                WrittenSuccess.Add(WriteSQLFile(dirPath, db));
+                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFile(dirPath, db));
 
                 ////Clear constraints from namespace
                 ////TODO determine whether cross XSD namespaces have cross constraints
@@ -99,113 +123,70 @@ namespace XmlSchemaClassGenerator.SQL
             }
         }
 
-        private bool WriteSQLFile(string path, DBRoles db)
+        private void WriteSeparateFiles(List<CodeNamespace> lcn)
         {
+            List<DBRoles> dbRoles = new List<DBRoles>();
             try
             {
-                //Test for directory
-                if (Directory.Exists(path) == false)
-                { Directory.CreateDirectory(path); }
-
-                //Iterate tables
-                foreach (Table t in db.Tables)
+                foreach (CodeNamespace cn in lcn)
                 {
-                    string tablePath = Path.Combine(path, t.Name + ".sql");
+                    string dirPath = Path.Combine(OutputDirectory, Validation.Namespace.NameIsValid(cn.Name));
 
-                    using (var sw = new StreamWriter(tablePath))
+                    var ccu = new CodeCompileUnit();
+                    var cns = new CodeNamespace(Validation.Namespace.NameIsValid(cn.Name));
+
+                    cns.Imports.AddRange(cn.Imports.Cast<CodeNamespaceImport>().ToArray());
+                    cns.Comments.AddRange(cn.Comments);
+                    ccu.Namespaces.Add(cns);
+
+                    List<DBRoles> dbLocalRoles = new List<DBRoles>();
+                    foreach (CodeTypeDeclaration ctd in cn.Types)
                     {
-                        //Create table
-                        sw.WriteLine("CREATE TABLE [dbo].[" + t.Name + "]");
-                        sw.WriteLine("(");
-                        sw.WriteLine(Format.Tabs(1) + "--From " + db.Name + " XSD");
-                        //TODO table validation required
-                        //Number of primary keys
-                        //Primary key name
+                        string path = Path.Combine(dirPath, ctd.Name + ".sql");
+                        cns.Types.Clear();
+                        cns.Types.Add(ctd);
+                        Configuration?.WriteLog(path);
 
-                        if (t.Fields.Count(f => f.IsPrimary == true) == 1)
-                        {
-                            Field pk = t.Fields.FirstOrDefault(f => f.IsPrimary == true);
-                            if (pk.Name != t.Name + "Id")
-                            {
-                                t.Fields[t.Fields.IndexOf(pk)].Name = t.Name + "Id";
-                            }
-                        }
-                        else
-                        {
-                            t.Fields.Insert(0, CreateGenericPrimaryKey(t));
-                        }
+                        Write.Classes c = new Write.Classes();
+                        DBRoles dbTemp = c.Output(ctd, ccu, path, Configuration);
+                        if (dbTemp != null)
+                        { dbLocalRoles.Add(dbTemp); }
 
-                        //Create fields
-                        foreach (Field f in t.Fields)
-                        {
-                            
-                            sw.Write(Format.Tabs(1) + "[" + f.Name.ToString() + "]");
-                            sw.Write(Format.Tabs(4) + f.DataType.Name.ToString());
-
-                            //Allow NULL
-                            if (f.DataType.IsNullable == true)
-                            { sw.WriteLine(Format.Tabs(3) + "NULL,"); }
-                            else
-                            { sw.WriteLine(Format.Tabs(3) + "NOT NULL,"); }
-                        }
-
-                        sw.WriteLine();
-                        sw.WriteLine(Format.Tabs(1) + "CONSTRAINT [PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC)");
-
-                        ////Insert Primary Key information if it exists
-                        //if (t.Fields.Count(f => f.IsPrimary == true) == 1)
-                        //{
-                        //    if (db.Constraints.Count > 0)
-                        //    { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC),"); }
-                        //    else
-                        //    { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED([" + t.Name + "Id] ASC)"); }
-                        //}
-
-                        ////Add constraints
-                        //foreach (Constraint c in db.Constraints)
-                        //{
-                        //    sw.Write("CONSTRAINT [FK_" + c.ChildTable + "_" + c.PrimaryTable + "] ");
-                        //    sw.Write("FOREIGN KEY ([" + c.ChildField + "]) ");
-                        //    sw.Write("REFERENCES [" + db.Name + "].[" + c.PrimaryTable + "] (" + c.PrimaryField + "])");
-                        //    if (c.DeleteCascate) sw.Write(" ON DELETE CASCADE");
-                        //    if (c.UpdateCascade) sw.Write(" ON UPDATE CASCADE");
-                        //    if (db.Constraints.IndexOf(c) == db.Constraints.Count - 1)
-                        //    { sw.WriteLine(""); }
-                        //    else
-                        //    { sw.WriteLine(","); }
-                        //}
-
-                        sw.WriteLine(");");
-                        sw.Close();
+                        //Add new file to list
+                        if (path != "")
+                        { WrittenFiles.Add(path); }
                     }
+
+                    //Consolidate DBRoles for same XSD file into new single DBRole
+                    DBRoles db = new DBRoles()
+                    { Name = ccu.Namespaces[0].Name };
+
+                    foreach (DBRoles d in dbLocalRoles)
+                    {
+                        db.Schemas.AddRange(d.Schemas);
+                        //db.Keys.AddRange(d.Keys);
+                    }
+                    //db.Keys = db.Keys.Distinct().ToList();
+                    dbRoles.Add(db);
+                    //List<bool> WrittenSuccess = new List<bool>();
+                    //WrittenSuccess.Add(WriteSQLFile(dirPath, db));
                 }
+
+                //Cross check tables and objects for foreign key relationships
+                DBRoles dbOut = Link.MergeNamespaces(dbRoles);
+
+                List<bool> WrittenSuccess = new List<bool>();
+                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFile(OutputDirectory, dbOut));
+
+                ////Clear constraints from namespace
+                ////TODO determine whether cross XSD namespaces have cross constraints
+                //SQL.Write.Classes.constraints.Clear();
             }
             catch (Exception ae)
             {
                 string s = ae.ToString();
+                if (ae.InnerException != null) s = ae.InnerException.Message;
             }
-            return true;
-        }
-
-        private Field CreateGenericPrimaryKey(Table t)
-        {
-            Field pk = new Field()
-            {
-                AllowNull = false,
-                IsPrimary = true,
-                Name = t.Name + "Id",
-            };
-            Enums.DataType dt = new Enums.DataType()
-            {
-                HasTypeError = false,
-                IsBaseType = true,
-                IsList = false,
-                IsNullable = false,
-                Name = "INT",
-            };
-            pk.DataType = dt;
-            pk.PrimaryInfo = new PrimaryKey();
-            return pk;
         }
     }
 }

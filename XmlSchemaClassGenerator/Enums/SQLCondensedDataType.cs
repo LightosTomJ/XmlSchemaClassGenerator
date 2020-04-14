@@ -4,7 +4,7 @@ using System.Text;
 
 namespace XmlSchemaClassGenerator.Enums
 {
-    public enum SQLDataType
+    public enum SQLCondensedDataType
     {
         CHAR_N_ = 1,
         VARCHAR_N_ = 2,

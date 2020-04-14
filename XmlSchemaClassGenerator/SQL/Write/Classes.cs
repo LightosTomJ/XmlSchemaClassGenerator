@@ -1,16 +1,14 @@
 ﻿using System;
 using System.CodeDom;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using XmlSchemaClassGenerator.SQL.Components;
-using XmlSchemaClassGenerator.Validation;
 
 namespace XmlSchemaClassGenerator.SQL.Write
 {
     public class Classes
     {
-        public static List<Constraint> constraints = new List<Constraint>();
+        public static List<Key> keys = new List<Key>();
         public DBRoles Output(CodeTypeDeclaration ctd, CodeCompileUnit cu, string path, GeneratorConfiguration configuration)
         {
             DBRoles roleNamespace = new DBRoles();
@@ -60,55 +58,33 @@ namespace XmlSchemaClassGenerator.SQL.Write
                 //Enums must be separated into separate table, populate and linked via foreign key reference
                 if (ctd.IsEnum)
                 {
-                    //Create data insert deployment script
+                    Table t = Enums.CreateSchema(ctd, cu, lFieldMembers);
+                    if (t != null) roleNamespace.Schemas.Add(t);
 
-                    return null;
+                    DataSet ds = Enums.CreateDataSet(ctd, cu, lFieldMembers);
+
+                    if (roleNamespace.deployScript == null) roleNamespace.deployScript = new DeployScript();
+                    roleNamespace.deployScript.DataTables.Add(t.Name);
                 }
+                else if (ctd.IsClass)
+                { 
+                    Table t = Tables.CreateSchema(ctd, cu, lFieldMembers);
+                    if (t != null) roleNamespace.Schemas.Add(t);
+                }
+                else if (ctd.IsInterface)
+                { }
                 else
-                {
-                    Table t = new Table();
-                    t.Name = ctd.Name;
-                    
-                    foreach (CodeMemberField cmf in lFieldMembers)
-                    {
-                        string fName = ConvertTypes.GetNameFromCodeMemberField(cmf);
-
-                        Field f = new Field()
-                        {
-                            Name = fName,
-                            AllowNull = false
-                        };
-
-                        
-                        if (fName.ToUpper() == "ID" || fName.Substring(fName.Length - 2,2).ToUpper() == "ID")
-                        {
-                            if (t.Fields.Count(fi => fi.IsPrimary == true) == 0)
-                            {
-                                f.IsPrimary = true;
-                                f.PrimaryInfo = new PrimaryKey();
-                                f.AllowNull = false;
-                            }
-                        }
-                        
-                        f.DataType = ConvertTypes.SQLToBase(cmf.Type, cmf, ctd);
-                        if (constraints != null && constraints.Count > 0)
-                        {
-                            //Sort constraints
-                        }
-
-                        t.Fields.Add(f);
-                    }
-
-                    roleNamespace.Tables.Add(t);
-                }
+                { }
             }
             catch (Exception ae)
             {
                 string s = ae.ToString();
                 return null;
             }
-            roleNamespace.Constraints = constraints;
+            //roleNamespace.Keys = keys;
             return roleNamespace;
         }
+
+        
     }
 }

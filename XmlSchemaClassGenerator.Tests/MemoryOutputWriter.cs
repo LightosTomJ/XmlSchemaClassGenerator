@@ -19,5 +19,18 @@ namespace XmlSchemaClassGenerator.Tests
             Write(writer, cu);
             _contents.Add(writer.ToString());
         }
+
+        public override void Write(List<CodeNamespace> lcn)
+        {
+            foreach (CodeNamespace cn in lcn)
+            {
+                var cu = new CodeCompileUnit();
+                cu.Namespaces.Add(cn);
+
+                using var writer = new StringWriter();
+                Write(writer, cu);
+                _contents.Add(writer.ToString());
+            }
+        }
     }
 }

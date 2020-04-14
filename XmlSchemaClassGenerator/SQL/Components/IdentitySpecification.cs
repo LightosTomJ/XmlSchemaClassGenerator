@@ -4,12 +4,13 @@ using System.Text;
 
 namespace XmlSchemaClassGenerator.SQL.Components
 {
-    public class PrimaryKey
+    public class IdentitySpecification
     {
         public bool IsIdentity { get; set; } = true;
-        public bool IsClustered { get; set; } = true;
+        public int IdentityIncrement { get; set; } = 1;
+        public int IdentitySeed { get; set; } = 1;
 
-        public PrimaryKey()
+        public IdentitySpecification()
         { }
     }
 }

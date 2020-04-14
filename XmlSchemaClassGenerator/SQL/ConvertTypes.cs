@@ -9,7 +9,7 @@ namespace XmlSchemaClassGenerator.SQL
 {
     public static class ConvertTypes
     {
-        public static DataType SQLToBase(CodeTypeReference ctr, CodeMemberField cmf,
+        public static Table SQLToBase(Table t, Field f, CodeTypeReference ctr, CodeMemberField cmf,
                                          CodeTypeDeclaration ctd)
         {
             try
@@ -21,40 +21,35 @@ namespace XmlSchemaClassGenerator.SQL
                     {
                         foreach (CodeTypeReference ctrInner in ctr.TypeArguments)
                         {
-                            DataType dtInner = SQLToBase(ctrInner, cmf, ctd);
-                            dtInner.IsList = true;
-                            dtInner.IsNullable = false;
-                            return dtInner;
+                            t = SQLToBase(t, f, ctrInner, cmf, ctd);
+                            f.DataType.IsList = true;
+                            f.DataType.IsNullable = false;
+                            return t;
                         }
                     }
                     else
                     {
                         if (ctr.BaseType.Contains("System.Collections.ObjectModel"))
                         {
-                            //Foreign key table found
-                            //Recusive function required to loop to bottom key table
-                            Constraint constraint = new Constraint();
-                            if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
-                            {
-                                constraint.ChildTable = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
-                                constraint.PrimaryTable = ctd.Name;
-                                constraint.ChildField = "";     //Unknown, guess will have to be made by table on table field comparison
-                                constraint.PrimaryField = cmf.Name;
-                                SQL.Write.Classes.constraints.Add(constraint);
-
-                                return new DataType()
-                                {
-                                    IsBaseType = false,
-                                    Name = constraint.ChildTable,
-                                    HasTypeError = false,
-                                    IsList = true
-                                };
-                            }
+                            //Determine whether member is public or private and 'XmlIgnoreAttribute()'
+                            if (cmf.CustomAttributes.Count == 0)
+                            { return GenerateKeyLink(t, f, ctr, cmf, ctd); }
                             else
                             {
-                                DataType sqlT = SQLToBase(ctr, cmf, ctd);
-                                return sqlT;
+                                if (XmlIgnoreAttributeCount(cmf.CustomAttributes) == 0)
+                                {
+                                    //Maybe do something
+                                    return GenerateKeyLink(t, f, ctr, cmf, ctd);
+                                }
+                                else
+                                {
+                                    //Ignore member
+                                }
                             }
+                        }
+                        else
+                        {
+
                         }
                     }
                 }
@@ -63,15 +58,19 @@ namespace XmlSchemaClassGenerator.SQL
                     //Iterate into lower levels
                     foreach (CodeTypeReference ctrInner in ctr.TypeArguments)
                     {
-                        DataType dtInner = SQLToBase(ctrInner, cmf, ctd);
-                        dtInner.IsList = true;
-                        dtInner.IsNullable = true;
-                        return dtInner;
+                        Table tTemp = SQLToBase(t, f, ctrInner, cmf, ctd);
+
+                        f.DataType.IsList = true;
+                        f.DataType.IsNullable = true;
+                        return t;
                     }
                 }
                 else
                 {
-                    return GetTypeByName(ctr);
+                    if (f.Name == null || f.Name == "")
+                    { f.Name = ConvertTypes.GetNameFromCodeMemberField(cmf); }
+                    f.DataType = GetTypeByName(ctr);
+                    t.Fields.Add(f);
                 }
             }
             catch (Exception ae)
@@ -79,7 +78,7 @@ namespace XmlSchemaClassGenerator.SQL
                 string s = ae.ToString();
                 return null;
             }
-            return new DataType();
+            return t;
         }
 
         private static DataType GetTypeByName(CodeTypeReference ctr)
@@ -122,6 +121,10 @@ namespace XmlSchemaClassGenerator.SQL
                         Name = "NVARCHAR",
                     };
                     //Test for length restrictions
+                    if (ctr.TypeArguments.Count > 0)
+                    { dt.Para1 = 0; }
+                    else
+                    { dt.Para1 = 5000; }
                     return dt;
                 }
                 else if (ctr.BaseType == "System.DateTime")
@@ -164,7 +167,8 @@ namespace XmlSchemaClassGenerator.SQL
                     {
                         IsBaseType = true,
                         IsList = false,
-                        Name = "OBJECT",
+                        //Name = "OBJECT",
+                        Name = ctr.BaseType,
                         Para1 = 255
                     };
                     //Other needs separate funcitionality to map
@@ -178,45 +182,45 @@ namespace XmlSchemaClassGenerator.SQL
             }
         }
 
-        public static SQLDataType IsBaseLevel(CodeTypeReference ctr, out List<Constraint> constraints)
+        public static SQLCondensedDataType IsBaseLevel(CodeTypeReference ctr, out List<Key> constraints)
         {
             constraints = null;
             try
             {
                 if (ctr.BaseType == "System.Boolean")
                 {
-                    return SQLDataType.BIT;
+                    return SQLCondensedDataType.BIT;
                 }
                 else if (ctr.BaseType == "System.Single" || ctr.BaseType == "System.Int32")
                 {
-                    return SQLDataType.INT;
+                    return SQLCondensedDataType.INT;
                 }
                 else if (ctr.BaseType == "System.Double" || ctr.BaseType == "System.Int64")
                 {
-                    return SQLDataType.BIGINT;
+                    return SQLCondensedDataType.BIGINT;
                 }
                 else if (ctr.BaseType == "System.String")
                 {
                     //look for MaxLengthAttribute and add data accordingly
-                    return SQLDataType.NVARCHAR_MAX_;
+                    return SQLCondensedDataType.NVARCHAR_MAX_;
                 }
                 else if (ctr.BaseType == "System.DateTime")
                 {
-                    return SQLDataType.DATETIME;
+                    return SQLCondensedDataType.DATETIME;
                 }
                 else if (ctr.BaseType == "System.Nullable`1")
                 {
 
-                    return SQLDataType.NVARCHAR_MAX_;
+                    return SQLCondensedDataType.NVARCHAR_MAX_;
                 }
                 else if (ctr.BaseType == "System.Decimal")
                 {
-                    return SQLDataType.DECIMAL_P_S_;
+                    return SQLCondensedDataType.DECIMAL_P_S_;
                 }
                 else if (ctr.BaseType == "System.Object")
                 {
                     //Objects may indicate errors within the XSD
-                    return SQLDataType.NVARCHAR;
+                    return SQLCondensedDataType.SQL_VARIANT;
                 }
                 //else if (ctr.BaseType == "")
                 //{
@@ -290,7 +294,7 @@ namespace XmlSchemaClassGenerator.SQL
                 else
                 {
                     //Look for foreign key link
-                    return SQLDataType.OTHER;
+                    return SQLCondensedDataType.OTHER;
                     //Other needs separate funcitionality to map
                     //variables together
                 }
@@ -299,7 +303,7 @@ namespace XmlSchemaClassGenerator.SQL
             {
                 string s = ae.ToString();
             }
-            return SQLDataType.NVARCHAR_MAX_;
+            return SQLCondensedDataType.NVARCHAR_MAX_;
         }
 
         public static string SystemToBase(string systemType)
@@ -338,10 +342,66 @@ namespace XmlSchemaClassGenerator.SQL
 
         public static string GetNameFromCodeMemberField(CodeMemberField cmf)
         {
-            if (cmf.Name.IndexOf(" ") > 0)
-            { return cmf.Name.Substring(0, cmf.Name.IndexOf(" ")); }
-            else
-            { return cmf.Name; }
+            string sName = cmf.Name;
+            if (sName.IndexOf(" ") > 0)
+            { sName = sName.Substring(0, cmf.Name.IndexOf(" ")); }
+
+            if (sName.Contains("\r")) sName = sName.Replace("\r", "");
+            if (sName.Contains("\n")) sName = sName.Replace("\n", "");
+
+            return sName.Trim();
+        }
+
+        private static int XmlIgnoreAttributeCount(CodeAttributeDeclarationCollection cac)
+        {
+            int c = 0;
+            foreach (CodeAttributeDeclaration ca in cac)
+            {
+                if (ca.Name.Contains("XmlIgnoreAttribute")) c++;
+            }
+            return c;
+        }
+
+        private static Table GenerateKeyLink(Table t, Field f, CodeTypeReference ctr, CodeMemberField cmf,
+                                         CodeTypeDeclaration ctd)
+        {
+            DataType sqlT = null;
+            try
+            {
+                //Foreign key table found
+                //Recusive function required to loop to bottom key table
+                if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
+                {
+                    Key key = new Key();
+                    string sExtracted = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
+                    key.ForeignKeyTable = sExtracted;
+                    key.PrimaryKeyTable = ctd.Name;
+                    key.ForeignKeyField = ctd.Name + "Id";     //Unknown, guess will have to be made by table on table field comparison
+                    key.PrimaryKeyField = ctd.Name + "Id";
+                    //Write.Classes.keys.Add(key);
+
+                    f.DataType = new DataType()
+                    {
+                        IsBaseType = false,
+                        Name = key.ForeignKeyTable,
+                        HasTypeError = false,
+                        IsList = true
+                    };
+                    t.Keys.Add(key);
+                    t.Fields.Add(f);
+                }
+                else
+                {
+                    t = SQLToBase(t, f, ctr, cmf, ctd);
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+                if (ae.InnerException != null) s = ae.InnerException.ToString();
+                return null;
+            }
+            return t;
         }
     }
 }

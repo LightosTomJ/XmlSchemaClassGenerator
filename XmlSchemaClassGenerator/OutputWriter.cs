@@ -1,6 +1,7 @@
 ﻿using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -21,6 +22,7 @@ namespace XmlSchemaClassGenerator
         protected virtual CodeDomProvider Provider { get; } = new Microsoft.CSharp.CSharpCodeProvider();
 
         public abstract void Write(CodeNamespace cn);
+        public abstract void Write(List<CodeNamespace> cn);
 
         protected void Write(TextWriter writer, CodeCompileUnit cu)
         {
