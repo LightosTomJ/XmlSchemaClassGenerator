@@ -51,31 +51,38 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         }
 
                         sw.WriteLine();
-                        sw.WriteLine(Format.Tabs(1) + "CONSTRAINT [PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC)");
+                        if (t.Keys.Count > 0)
+                        { sw.WriteLine(Format.Tabs(1) + "CONSTRAINT [PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC),"); }
+                        else
+                        { sw.WriteLine(Format.Tabs(1) + "CONSTRAINT [PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC)"); }
 
                         //Add constraints
                         foreach (Key k in t.Keys)
                         {
                             sw.Write(Format.Tabs(1) + "--CONSTRAINT [FK_" + k.PrimaryKeyTable + "_" + k.ForeignKeyTable + "] ");
-                            sw.Write("FOREIGN KEY ([" + k.PrimaryKeyField + "]) ");
-                            sw.Write("REFERENCES [dbo].[" + k.PrimaryKeyTable + "] (" + k.PrimaryKeyField + "])");
-                            //Delete cascade rule
-                            if (k.DeleteCascate)
-                            { sw.Write(" ON DELETE CASCADE"); }
-                            else
-                            { sw.Write(" --ON DELETE CASCADE"); }
-                            //Update cascade rule
-                            if (k.UpdateCascade)
-                            { sw.Write(" ON UPDATE CASCADE"); }
-                            else
-                            { sw.Write(" --ON UPDATE CASCADE"); }
+                            sw.Write("FOREIGN KEY ([" + k.ForeignKeyField + "]) ");
 
-                            if (t.Keys.IndexOf(k) == t.Keys.Count - 1)
-                            { sw.WriteLine(""); }
+                            string IsFinalLine = "";
+                            if (t.Keys.IndexOf(k) < t.Keys.Count - 1)
+                            { IsFinalLine = ","; }
+
+                            if (k.UpdateCascade == false && k.DeleteCascate == false)
+                            {
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "])" + IsFinalLine + " --ON UPDATE CASCADE, ON DELETE CASCADE,");
+                            }
+                            else if (k.UpdateCascade == true && k.DeleteCascate == false)
+                            {
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) ON UPDATE CASCADE" + IsFinalLine + " --ON DELETE CASCADE,");
+                            }
+                            else if (k.UpdateCascade == false && k.DeleteCascate == true)
+                            {
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) ON DELETE CASCADE" + IsFinalLine + " --ON UPDATE CASCADE,");
+                            }
                             else
-                            { sw.WriteLine(","); }
+                            {
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) -ON UPDATE CASCADE, ON DELETE CASCADE" + IsFinalLine);
+                            }
                         }
-
                         sw.WriteLine(");");
                         sw.Close();
                     }
