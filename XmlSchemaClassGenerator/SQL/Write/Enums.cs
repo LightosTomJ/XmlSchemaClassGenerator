@@ -24,26 +24,11 @@ namespace XmlSchemaClassGenerator.SQL.Write
                 IsClustered = true,
                 IdentitySpecification = new IdentitySpecification(),
                 AllowNull = false,
-                DataType = new XmlSchemaClassGenerator.Enums.DataType()
-                {
-                    IsNullable = false,
-                    Name = "TINYINT",
-                    IsBaseType = true,
-                    IsList = false
-                }
-            };
-            t.Fields.Add(pkF);
-
-            Field f = new Field()
-            {
-                Name = "Value",
-                IsPrimary = false,
-                AllowNull = false
-            };
+            };      
 
             if (lFieldMembers.Count < 255)
             {
-                f.DataType = new DataType()
+                pkF.DataType = new DataType()
                 {
                     IsNullable = false,
                     Name = SQLCondensedDataType.TINYINT.ToString(),
@@ -53,7 +38,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             }
             else if (lFieldMembers.Count < 32767)
             {
-                f.DataType = new DataType()
+                pkF.DataType = new DataType()
                 {
                     IsNullable = false,
                     Name = SQLCondensedDataType.SMALLINT.ToString(),
@@ -63,7 +48,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             }
             else if (lFieldMembers.Count < 2147483647)
             {
-                f.DataType = new DataType()
+                pkF.DataType = new DataType()
                 {
                     IsNullable = false,
                     Name = SQLCondensedDataType.INT.ToString(),
@@ -73,7 +58,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             }
             //else if (lFieldMembers.Count < 9223372036854775807)
             //{
-            //    f.DataType = new DataType()
+            //    pkF.DataType = new DataType()
             //    {
             //        IsNullable = false,
             //        Name = SQLCondensedDataType.BIGINT.ToString(),
@@ -83,7 +68,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             //}
             else
             {
-                f.DataType = new DataType()
+                pkF.DataType = new DataType()
                 {
                     IsNullable = false,
                     Name = SQLCondensedDataType.UNIQUEIDENTIFIER.ToString(),
@@ -91,6 +76,53 @@ namespace XmlSchemaClassGenerator.SQL.Write
                     IsList = false
                 };
             }
+            t.Fields.Add(pkF);
+
+            //Get data values
+            Field f = new Field()
+            {
+                Name = "Value",
+                IsPrimary = false,
+                AllowNull = false,
+            };
+
+            //Determine data type
+            if (lFieldMembers.Count(m => Utils.IsNumber(m.Name)) == lFieldMembers.Count)
+            {
+                //All enum values are numbers
+
+            }
+            else
+            {
+                int longest = lFieldMembers.Select(m => m.Name)
+                                .Aggregate("", (max, cur) => max.Length > cur.Length ? max : cur).Length;
+                if (longest < 4000)
+                {
+                    //NVARCHAR(longest)
+                    f.DataType = new DataType()
+                    {
+                        Name = SQLCondensedDataType.NVARCHAR.ToString(),
+                        IsBaseType = true,
+                        IsNullable = false,
+                        IsList = false,
+                        Para1 = longest
+                    };
+                }
+                else
+                {
+                    //NVARCHAR(MAX)
+                    f.DataType = new DataType()
+                    {
+                        Name = SQLCondensedDataType.NVARCHAR.ToString(),
+                        IsBaseType = true,
+                        IsNullable = false,
+                        IsList = false,
+                        Para1 = 5000
+                    };
+                }
+            }
+
+
             t.Fields.Add(f);
 
             return t;

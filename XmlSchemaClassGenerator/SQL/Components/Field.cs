@@ -7,6 +7,8 @@ namespace XmlSchemaClassGenerator.SQL.Components
 {
     public class Field
     {
+        //Additional members, not found in generic SQL
+        public string OriginalName { get; set; }
         //'General' section of SQL column properties
         public string Name { get; set; }
         public bool AllowNull { get; set; } = true;

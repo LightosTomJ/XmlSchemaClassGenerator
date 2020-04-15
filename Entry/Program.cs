@@ -8,7 +8,7 @@ namespace Entry
         static void Main(string[] args)
         {
             CustomSettings.inputPath = @"C:\Users\TomJames_zyl8law\Lightos\Lightos Hub - Documents\01-Clients\Atkins\Rail\SDEF\XSDs\7.2\";
-            CustomSettings.outputPath = @"C:\Users\TomJames_zyl8law\Lightos\Lightos Hub - Documents\01-Clients\Atkins\Rail\SDEF\Conversion via SQLGenerator\";
+            CustomSettings.outputPath = @"C:\Users\TomJames_zyl8law\source\repos\XSDtoCSharp\XSDtoSQL\";
 
             List<string> errs = CustomSettings.Get();
             if (errs.Count > 0)

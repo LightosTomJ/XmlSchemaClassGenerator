@@ -8,7 +8,6 @@ namespace XmlSchemaClassGenerator.SQL.Write
 {
     public class Classes
     {
-        public static List<Key> keys = new List<Key>();
         public DBRoles Output(CodeTypeDeclaration ctd, CodeCompileUnit cu, string path, GeneratorConfiguration configuration)
         {
             DBRoles roleNamespace = new DBRoles();

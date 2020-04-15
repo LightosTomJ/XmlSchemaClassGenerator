@@ -10,9 +10,9 @@ namespace XmlSchemaClassGenerator.SQL
     {
         public static DBRoles MergeNamespaces(List<DBRoles> roles)
         {
-			DBRoles dbOut = new DBRoles();
-			try
-			{
+            DBRoles dbOut = new DBRoles();
+            try
+            {
                 List<string> sqlTypes = GetSQLTypes();
                 dbOut.Name = "MergedXSDs";
                 foreach (DBRoles db in roles)
@@ -22,6 +22,10 @@ namespace XmlSchemaClassGenerator.SQL
                     //dbOut.Keys.AddRange(db.Keys);
                 }
 
+                List<string> tabNames = dbOut.Schemas.Select(s => s.Name).OrderBy(s => s).ToList();
+
+                dbOut = Validation.PrimaryKey.ConfirmPrimaryKeys(dbOut);
+
                 //Search for SQL data types that aren't base names but
                 //other objects within XSD sets
                 foreach (Table t in dbOut.Schemas)
@@ -30,18 +34,43 @@ namespace XmlSchemaClassGenerator.SQL
                     {
                         string dataType = f.DataType.Name;
                         if (dataType.Contains("(") == true)
-                        { 
-                            dataType = f.DataType.Name.Substring(0, f.DataType.Name.IndexOf("(") - 1); 
+                        {
+                            dataType = f.DataType.Name.Substring(0, f.DataType.Name.IndexOf("(") - 1);
                         }
                         if (sqlTypes.Count(s => s.Equals(dataType)) != 1)
                         {
                             //Find different table that contains this same field name + "Id"
                             List<Table> otherTables = dbOut.Schemas.ToList();
                             otherTables.Remove(t);
-                            Table tMatch = TablesWithMatchingFieldName(otherTables, t, f);
-                            if (tMatch != null)
+
+                            //Field name match
+                            List<Table> tMatches = TablesWithMatchingName(otherTables, f.Name);
+                            if (tMatches.Count == 1)
                             {
-                                //Key pair match found
+                                Key k = CreateKeyIfDoesNotExist(t, tMatches[0], f);
+                                if (k != null) t.Keys.Add(k);
+                            }
+                            else if (tMatches.Count > 1)
+                            { }
+                            else
+                            {
+                                //Field data type match
+                                tMatches.Clear();
+                                tMatches = TablesWithMatchingName(otherTables, dataType);
+                                if (tMatches.Count == 1)
+                                {
+                                    Key k = CreateKeyIfDoesNotExist(t, tMatches[0], f);
+                                    if (k != null) t.Keys.Add(k);
+                                }
+                                else if (tMatches.Count > 1)
+                                {
+                                    Table tG = GuessRelevantTable(tMatches, t);
+                                    if (tG != null)
+                                    {
+                                        Key k = CreateKeyIfDoesNotExist(t, tG, f);
+                                        if (k != null) t.Keys.Add(k);
+                                    }
+                                }
                             }
                         }
                         else
@@ -51,7 +80,7 @@ namespace XmlSchemaClassGenerator.SQL
                     }
                 }
 
-			}
+            }
             catch (Exception ae)
             {
                 string s = ae.ToString();
@@ -96,50 +125,77 @@ namespace XmlSchemaClassGenerator.SQL
                 "TABLE"
             };
         }
-        
-        private static Table TablesWithMatchingFieldName(List<Table> tables, Table tl, Field f)
+
+        private static List<Table> TablesWithMatchingName(List<Table> tables, string Name)
+        {
+            List<Table> lTabs = new List<Table>();
+            try
+            {
+                foreach (Table t in tables)
+                {
+                    if (t.Name == Name)
+                    {
+                        lTabs.Add(t);
+                    }
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return lTabs;
+        }
+
+        private static Key CreateKeyIfDoesNotExist(Table pt, Table ft, Field f)
         {
             try
             {
-                List<Table> tByName = new List<Table>();
-                List<Table> tByClass = new List<Table>();
-                foreach (Table t in tables)
-                {
-                    if (t.Fields.Count(fl => fl.Name == f.Name) > 0)
-                    {
-                        tByName.Add(t);
-                    }
-                    if (t.Fields.Count(fl => fl.Name == f.DataType.Name) > 0)
-                    {
-                        tByClass.Add(t);
-                    }
-                }
-                if (tByName.Count == 0)
-                {
-                    if (tByClass.Count == 0)
-                    { }
-                    if (tByClass.Count == 1)
-                    { return tByClass[0]; }
-                    else
-                    {
-                        //Multiple table matches
-                        return tByClass[0];
-                    }
+                //Replace class with base type
+                Field fO = ft.Fields.FirstOrDefault(fc => fc.Name == ft.Name + "Id");
 
-                }
-                if (tByName.Count == 1)
-                { return tByName[0]; }
+                //Check other field DataType in a base type
+                if (fO.DataType.IsBaseType)
+                { f.DataType.Name = fO.DataType.Name; }
                 else
+                { f.DataType.Name = fO.DataType.Name; }
+
+                foreach (Key k in pt.Keys)
                 {
-                    //Multiple table matches
-                    return tByName[0];
+                    if (k.Name == "FK_" + pt.Name + "_" + ft.Name)
+                    {
+                        return null;
+                    }
                 }
+
+                return new Key()
+                {
+                    Name = "FK_" + pt.Name + "_" + ft.Name,
+                    ForeignKeyTable = ft.Name,
+                    PrimaryKeyTable = pt.Name,
+                    ForeignKeyField = ft.Name + "Id",
+                    PrimaryKeyField = pt.Name + "Id"
+                };
             }
             catch (Exception ae)
             {
                 string s = ae.ToString();
                 return null;
             }
+        }
+
+        private static Table GuessRelevantTable(List<Table> tables, Table t)
+        {
+            try
+            {
+                //Namespace test
+                List<Table> ltSameNamespace = tables.Where(tc => tc.Namespace == t.Namespace).ToList();
+                if (ltSameNamespace.Count == 1) return ltSameNamespace[0];
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return null;
         }
     }
 }

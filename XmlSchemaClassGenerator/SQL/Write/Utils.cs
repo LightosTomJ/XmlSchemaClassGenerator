@@ -14,13 +14,13 @@ namespace XmlSchemaClassGenerator.SQL.Write
             try
             {
                 //Test for directory
-                if (Directory.Exists(path) == false)
-                { Directory.CreateDirectory(path); }
+                if (Directory.Exists(Path.Combine(path, "dbo\\Tables\\")) == false)
+                { Directory.CreateDirectory(Path.Combine(path, "dbo\\Tables\\")); }
 
                 //Iterate tables
                 foreach (Table t in db.Schemas)
                 {
-                    string tablePath = Path.Combine(path, t.Name + ".sql");
+                    string tablePath = Path.Combine(path, "dbo\\Tables\\", t.Name + ".sql");
 
                     using (var sw = new StreamWriter(tablePath))
                     {
@@ -28,37 +28,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         sw.WriteLine("CREATE TABLE [dbo].[" + t.Name + "]");
                         sw.WriteLine("(");
                         sw.WriteLine(Format.Tabs(1) + "--From " + db.Name + " XSD");
-                        //TODO table validation required
-                        //Number of primary keys
-                        //Primary key name
-
-                        //if (t.Fields.Count(f => f.IsPrimary == true) == 1)
-                        //{
-                        //    Field pk = t.Fields.FirstOrDefault(f => f.IsPrimary == true);
-                        //    if (t.Fields[t.Fields.IndexOf(pk)].Name != t.Name + "Id")
-                        //    {
-                        //        if (t.Name.Substring(0, t.Name.Length - 2).ToUpper() != "ID")
-                        //        {
-                        //            t.Fields[t.Fields.IndexOf(pk)].Name = t.Name + "Id";
-                        //        }
-                        //        else if (t.Name.Substring(0, t.Name.Length - 2) == "ID")
-                        //        {
-                        //            t.Fields[t.Fields.IndexOf(pk)].Name = t.Name.Substring(0, t.Name.Length - 2) + "Id";
-                        //        }
-                        //        else if (t.Name.Substring(0, t.Name.Length - 2) == "id")
-                        //        {
-                        //            t.Fields[t.Fields.IndexOf(pk)].Name = t.Name.Substring(0, t.Name.Length - 2) + "Id";
-                        //        }
-                        //        else
-                        //        {
-
-                        //        }
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    t.Fields.Insert(0, CreateGenericPrimaryKey(t));
-                        //}
+                        sw.WriteLine(Format.Tabs(1) + "--From " + t.Namespace + " Namespace");
 
                         //Get longest field name length
                         int maxNameLength = GetLongestName(t.Fields);
@@ -83,28 +53,28 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         sw.WriteLine();
                         sw.WriteLine(Format.Tabs(1) + "CONSTRAINT [PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC)");
 
-                        ////Insert Primary Key information if it exists
-                        //if (t.Fields.Count(f => f.IsPrimary == true) == 1)
-                        //{
-                        //    if (db.Constraints.Count > 0)
-                        //    { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC),"); }
-                        //    else
-                        //    { sw.WriteLine("CONSTRAINT[PK_" + t.Name + "Id] PRIMARY KEY CLUSTERED ([" + t.Name + "Id] ASC)"); }
-                        //}
+                        //Add constraints
+                        foreach (Key k in t.Keys)
+                        {
+                            sw.Write(Format.Tabs(1) + "--CONSTRAINT [FK_" + k.PrimaryKeyTable + "_" + k.ForeignKeyTable + "] ");
+                            sw.Write("FOREIGN KEY ([" + k.PrimaryKeyField + "]) ");
+                            sw.Write("REFERENCES [dbo].[" + k.PrimaryKeyTable + "] (" + k.PrimaryKeyField + "])");
+                            //Delete cascade rule
+                            if (k.DeleteCascate)
+                            { sw.Write(" ON DELETE CASCADE"); }
+                            else
+                            { sw.Write(" --ON DELETE CASCADE"); }
+                            //Update cascade rule
+                            if (k.UpdateCascade)
+                            { sw.Write(" ON UPDATE CASCADE"); }
+                            else
+                            { sw.Write(" --ON UPDATE CASCADE"); }
 
-                        ////Add constraints
-                        //foreach (Constraint c in db.Constraints)
-                        //{
-                        //    sw.Write("CONSTRAINT [FK_" + c.ChildTable + "_" + c.PrimaryTable + "] ");
-                        //    sw.Write("FOREIGN KEY ([" + c.ChildField + "]) ");
-                        //    sw.Write("REFERENCES [" + db.Name + "].[" + c.PrimaryTable + "] (" + c.PrimaryField + "])");
-                        //    if (c.DeleteCascate) sw.Write(" ON DELETE CASCADE");
-                        //    if (c.UpdateCascade) sw.Write(" ON UPDATE CASCADE");
-                        //    if (db.Constraints.IndexOf(c) == db.Constraints.Count - 1)
-                        //    { sw.WriteLine(""); }
-                        //    else
-                        //    { sw.WriteLine(","); }
-                        //}
+                            if (t.Keys.IndexOf(k) == t.Keys.Count - 1)
+                            { sw.WriteLine(""); }
+                            else
+                            { sw.WriteLine(","); }
+                        }
 
                         sw.WriteLine(");");
                         sw.Close();
@@ -206,6 +176,23 @@ namespace XmlSchemaClassGenerator.SQL.Write
                 }
             }
             return dataLengths.Max();
+        }
+
+        public static bool IsNumber(string s)
+        {
+            bool value = true;
+            if (s == string.Empty || s == null)
+            {
+                value = false;
+            }
+            else
+            {
+                foreach (char c in s.ToCharArray())
+                {
+                    value = value && char.IsDigit(c);
+                }
+            }
+            return value;
         }
     }
 }

@@ -24,6 +24,7 @@ namespace XmlSchemaClassGenerator.SQL
                             t = SQLToBase(t, f, ctrInner, cmf, ctd);
                             f.DataType.IsList = true;
                             f.DataType.IsNullable = false;
+                            f.OriginalName = ctrInner.BaseType;
                             return t;
                         }
                     }
@@ -33,13 +34,19 @@ namespace XmlSchemaClassGenerator.SQL
                         {
                             //Determine whether member is public or private and 'XmlIgnoreAttribute()'
                             if (cmf.CustomAttributes.Count == 0)
-                            { return GenerateKeyLink(t, f, ctr, cmf, ctd); }
+                            { 
+                                t = GenerateKeyLink(t, f, ctr, cmf, ctd);
+                                f.OriginalName = ctr.BaseType;
+                                return t;
+                            }
                             else
                             {
                                 if (XmlIgnoreAttributeCount(cmf.CustomAttributes) == 0)
                                 {
                                     //Maybe do something
-                                    return GenerateKeyLink(t, f, ctr, cmf, ctd);
+                                    t = GenerateKeyLink(t, f, ctr, cmf, ctd);
+                                    f.OriginalName = ctr.BaseType;
+                                    return t;
                                 }
                                 else
                                 {
@@ -70,6 +77,7 @@ namespace XmlSchemaClassGenerator.SQL
                     if (f.Name == null || f.Name == "")
                     { f.Name = ConvertTypes.GetNameFromCodeMemberField(cmf); }
                     f.DataType = GetTypeByName(ctr);
+                    f.OriginalName = ctr.BaseType;
                     t.Fields.Add(f);
                 }
             }
@@ -168,8 +176,7 @@ namespace XmlSchemaClassGenerator.SQL
                         IsBaseType = true,
                         IsList = false,
                         //Name = "OBJECT",
-                        Name = ctr.BaseType,
-                        Para1 = 255
+                        Name = ctr.BaseType
                     };
                     //Other needs separate funcitionality to map
                     //variables together
@@ -222,70 +229,6 @@ namespace XmlSchemaClassGenerator.SQL
                     //Objects may indicate errors within the XSD
                     return SQLCondensedDataType.SQL_VARIANT;
                 }
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
-                //else if (ctr.BaseType == "")
-                //{
-
-                //    return SQLDataType.NVARCHAR_MAX_;
-                //}
                 //else if (ctr.BaseType == "")
                 //{
 
@@ -365,20 +308,21 @@ namespace XmlSchemaClassGenerator.SQL
         private static Table GenerateKeyLink(Table t, Field f, CodeTypeReference ctr, CodeMemberField cmf,
                                          CodeTypeDeclaration ctd)
         {
-            DataType sqlT = null;
             try
             {
                 //Foreign key table found
                 //Recusive function required to loop to bottom key table
                 if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
                 {
-                    Key key = new Key();
                     string sExtracted = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
-                    key.ForeignKeyTable = sExtracted;
-                    key.PrimaryKeyTable = ctd.Name;
-                    key.ForeignKeyField = ctd.Name + "Id";     //Unknown, guess will have to be made by table on table field comparison
-                    key.PrimaryKeyField = ctd.Name + "Id";
-                    //Write.Classes.keys.Add(key);
+                    Key key = new Key()
+                    {
+                        Name = "FK_" + t.Name + "_" + sExtracted,
+                        ForeignKeyTable = sExtracted,
+                        PrimaryKeyTable = ctd.Name,
+                        ForeignKeyField = sExtracted + "Id",
+                        PrimaryKeyField = ctd.Name + "Id"
+                    };
 
                     f.DataType = new DataType()
                     {
