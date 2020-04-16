@@ -102,6 +102,25 @@ namespace XmlSchemaClassGenerator.SQL
                         Name = "BIT",
                     };
                 }
+                else if (ctr.BaseType == "System.Byte")
+                {
+                    DataType dt = new DataType()
+                    {
+                        IsBaseType = true,
+                        IsList = false,
+                        Name = "TINYINT",
+                    };
+                    return dt;
+                }
+                else if (ctr.BaseType == "System.Int16")
+                {
+                    return new DataType()
+                    {
+                        IsBaseType = true,
+                        IsList = false,
+                        Name = "SMALLINT",
+                    };
+                }
                 else if (ctr.BaseType == "System.Single" || ctr.BaseType == "System.Int32")
                 {
                     return new DataType()
@@ -198,6 +217,14 @@ namespace XmlSchemaClassGenerator.SQL
                 {
                     return SQLCondensedDataType.BIT;
                 }
+                else if (ctr.BaseType == "System.Byte")
+                {
+                    return SQLCondensedDataType.TINYINT;
+                }
+                else if (ctr.BaseType == "System.Int16")
+                {
+                    return SQLCondensedDataType.SMALLINT;
+                }
                 else if (ctr.BaseType == "System.Single" || ctr.BaseType == "System.Int32")
                 {
                     return SQLCondensedDataType.INT;
@@ -217,7 +244,6 @@ namespace XmlSchemaClassGenerator.SQL
                 }
                 else if (ctr.BaseType == "System.Nullable`1")
                 {
-
                     return SQLCondensedDataType.NVARCHAR_MAX_;
                 }
                 else if (ctr.BaseType == "System.Decimal")
@@ -314,10 +340,10 @@ namespace XmlSchemaClassGenerator.SQL
                 //Recusive function required to loop to bottom key table
                 if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
                 {
-                    string sExtracted = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
+                    if (ctd.Name == "SignallingSchemeData")
+                    { }
 
-                    if (ctd.Name == "BehaviourTypeAvailableAspects" && sExtracted == "BehaviourTypeAvailableAspectsAvailableAspect")
-                    { }//sExtracted need to be "AvailableAspect"
+                    string sExtracted = ExtractInListClass(ctr, t.Namespace);
                     
                     Key key = new Key()
                     {
@@ -350,6 +376,27 @@ namespace XmlSchemaClassGenerator.SQL
                 return null;
             }
             return t;
+        }
+        private static string ExtractInListClass(CodeTypeReference ctr, string nameSpace)
+        {
+            string s;
+            try
+            {
+                s = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
+                if (s.Contains(nameSpace) && s.Contains("."))
+                {
+                    s = s.Replace(nameSpace, "");
+                    if (s.Substring(0, 1) == ".")
+                    { s = s.Substring(1, s.Length - 1); }
+                }
+            }
+            catch (Exception ae)
+            {
+                string sE = ae.ToString();
+                if (ae.InnerException != null) sE = ae.InnerException.ToString();
+                return "";
+            }
+            return s;
         }
     }
 }
