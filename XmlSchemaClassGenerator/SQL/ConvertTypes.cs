@@ -325,7 +325,6 @@ namespace XmlSchemaClassGenerator.SQL
                         ForeignKeyTable = sExtracted,
                         PrimaryKeyTable = ctd.Name,
                         ForeignKeyField = sExtracted + "Id",
-                        //PrimaryKeyField = ctd.Name + "Id"
                         PrimaryKeyField = f.Name
                     };
 

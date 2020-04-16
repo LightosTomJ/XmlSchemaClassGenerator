@@ -178,9 +178,8 @@ namespace XmlSchemaClassGenerator.SQL
                 List<bool> WrittenSuccess = new List<bool>();
                 WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFile(OutputDirectory, dbOut));
 
-                ////Clear constraints from namespace
-                ////TODO determine whether cross XSD namespaces have cross constraints
-                //SQL.Write.Classes.constraints.Clear();
+                //TODO create 'Data' script files from Enums
+                //TODO create 'Deployment' script file linking all data files
             }
             catch (Exception ae)
             {
