@@ -173,7 +173,7 @@ namespace XmlSchemaClassGenerator.SQL
                     ForeignKeyTable = ft.Name,
                     PrimaryKeyTable = pt.Name,
                     ForeignKeyField = ft.Name + "Id",
-                    PrimaryKeyField = pt.Name + "Id"
+                    PrimaryKeyField = f.Name
                 };
             }
             catch (Exception ae)

@@ -28,7 +28,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         sw.WriteLine("CREATE TABLE [dbo].[" + t.Name + "]");
                         sw.WriteLine("(");
                         sw.WriteLine(Format.Tabs(1) + "--From " + db.Name + " XSD");
-                        sw.WriteLine(Format.Tabs(1) + "--From " + t.Namespace + " Namespace");
+                        sw.WriteLine(Format.Tabs(1) + "--From '" + t.Namespace + "' Namespace");
 
                         //Get longest field name length
                         int maxNameLength = GetLongestName(t.Fields);
@@ -59,8 +59,8 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         //Add constraints
                         foreach (Key k in t.Keys)
                         {
-                            sw.Write(Format.Tabs(1) + "--CONSTRAINT [FK_" + k.PrimaryKeyTable + "_" + k.ForeignKeyTable + "] ");
-                            sw.Write("FOREIGN KEY ([" + k.ForeignKeyField + "]) ");
+                            sw.Write(Format.Tabs(1) + "CONSTRAINT [FK_" + k.PrimaryKeyTable + "_" + k.ForeignKeyTable + "] ");
+                            sw.Write("FOREIGN KEY ([" + k.PrimaryKeyField + "]) ");
 
                             string IsFinalLine = "";
                             if (t.Keys.IndexOf(k) < t.Keys.Count - 1)
@@ -68,19 +68,19 @@ namespace XmlSchemaClassGenerator.SQL.Write
 
                             if (k.UpdateCascade == false && k.DeleteCascate == false)
                             {
-                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "])" + IsFinalLine + " --ON UPDATE CASCADE, ON DELETE CASCADE,");
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] ([" + k.ForeignKeyField + "])" + IsFinalLine + " --ON UPDATE CASCADE, ON DELETE CASCADE,");
                             }
                             else if (k.UpdateCascade == true && k.DeleteCascate == false)
                             {
-                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) ON UPDATE CASCADE" + IsFinalLine + " --ON DELETE CASCADE,");
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] ([" + k.ForeignKeyField + "]) ON UPDATE CASCADE" + IsFinalLine + " --ON DELETE CASCADE,");
                             }
                             else if (k.UpdateCascade == false && k.DeleteCascate == true)
                             {
-                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) ON DELETE CASCADE" + IsFinalLine + " --ON UPDATE CASCADE,");
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] ([" + k.ForeignKeyField + "]) ON DELETE CASCADE" + IsFinalLine + " --ON UPDATE CASCADE,");
                             }
                             else
                             {
-                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] (" + k.ForeignKeyField + "]) -ON UPDATE CASCADE, ON DELETE CASCADE" + IsFinalLine);
+                                sw.WriteLine("REFERENCES [dbo].[" + k.ForeignKeyTable + "] ([" + k.ForeignKeyField + "]) -ON UPDATE CASCADE, ON DELETE CASCADE" + IsFinalLine);
                             }
                         }
                         sw.WriteLine(");");

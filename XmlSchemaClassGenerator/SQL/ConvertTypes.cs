@@ -315,13 +315,18 @@ namespace XmlSchemaClassGenerator.SQL
                 if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
                 {
                     string sExtracted = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
+
+                    if (ctd.Name == "BehaviourTypeAvailableAspects" && sExtracted == "BehaviourTypeAvailableAspectsAvailableAspect")
+                    { }//sExtracted need to be "AvailableAspect"
+                    
                     Key key = new Key()
                     {
                         Name = "FK_" + t.Name + "_" + sExtracted,
                         ForeignKeyTable = sExtracted,
                         PrimaryKeyTable = ctd.Name,
                         ForeignKeyField = sExtracted + "Id",
-                        PrimaryKeyField = ctd.Name + "Id"
+                        //PrimaryKeyField = ctd.Name + "Id"
+                        PrimaryKeyField = f.Name
                     };
 
                     f.DataType = new DataType()
