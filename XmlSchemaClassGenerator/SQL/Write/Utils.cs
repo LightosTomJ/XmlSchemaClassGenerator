@@ -59,7 +59,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         //Add constraints
                         foreach (Key k in t.Keys)
                         {
-                            sw.Write(Format.Tabs(1) + "CONSTRAINT [FK_" + k.PrimaryKeyTable + "_" + k.ForeignKeyTable + "] ");
+                            sw.Write(Format.Tabs(1) + "CONSTRAINT [" + k.Name + "] ");
                             sw.Write("FOREIGN KEY ([" + k.PrimaryKeyField + "]) ");
 
                             string IsFinalLine = "";
@@ -144,6 +144,10 @@ namespace XmlSchemaClassGenerator.SQL.Write
             else if (f.DataType.Para1 != 0 && f.DataType.Para2 == 0)
             {
                 if (f.DataType.Name == "NVARCHAR" && f.DataType.Para1 > 4000)
+                {
+                    return f.DataType.Name + "(MAX)";
+                }
+                if (f.DataType.Name == "VARCHAR" && f.DataType.Para1 > 8000)
                 {
                     return f.DataType.Name + "(MAX)";
                 }

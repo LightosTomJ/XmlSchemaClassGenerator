@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using XmlSchemaClassGenerator.SQL.Components;
+using XmlSchemaClassGenerator.SQL.Write;
 
 namespace XmlSchemaClassGenerator.SQL
 {
@@ -24,7 +25,7 @@ namespace XmlSchemaClassGenerator.SQL
 
                 List<string> tabNames = dbOut.Schemas.Select(s => s.Name).OrderBy(s => s).ToList();
 
-                dbOut = Validation.PrimaryKey.ConfirmPrimaryKeys(dbOut);
+                dbOut = Validation.Schema.All(dbOut);
 
                 //Search for SQL data types that aren't base names but
                 //other objects within XSD sets
@@ -80,6 +81,8 @@ namespace XmlSchemaClassGenerator.SQL
                     }
                 }
 
+                //Check that key relationships are valid
+                dbOut = Validation.ForeignKey.IsNameUnique(dbOut);
             }
             catch (Exception ae)
             {
@@ -92,11 +95,11 @@ namespace XmlSchemaClassGenerator.SQL
             return new List<string>()
             {
                 "CHAR",
-                "VARCHAR",
-                "TEXT",
                 "NCHAR",
-                "NVARCHAR",
+                "TEXT",
                 "NTEXT",
+                "VARCHAR",
+                "NVARCHAR",
                 "BINARY",
                 "VARBINARY",
                 "IMAGE",
@@ -155,7 +158,17 @@ namespace XmlSchemaClassGenerator.SQL
 
                 //Check other field DataType in a base type
                 if (fO.DataType.IsBaseType)
-                { f.DataType.Name = fO.DataType.Name; }
+                {
+                    f.DataType.Name = Utils.GetDataSQLName(fO);
+                    //if (fO.DataType.Name.Contains("VARCHAR"))
+                    //{
+                    //    f.DataType.Name = Utils.GetDataSQLName(fO);
+                    //}
+                    //else
+                    //{
+                    //    f.DataType.Name = fO.DataType.Name;
+                    //}
+                }
                 else
                 { f.DataType.Name = fO.DataType.Name; }
 

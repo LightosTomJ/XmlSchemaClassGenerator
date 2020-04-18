@@ -76,7 +76,7 @@ namespace XmlSchemaClassGenerator.SQL
                 {
                     if (f.Name == null || f.Name == "")
                     { f.Name = ConvertTypes.GetNameFromCodeMemberField(cmf); }
-                    f.DataType = GetTypeByName(ctr);
+                    f.DataType = GetTypeByName(ctr, t.Namespace);
                     f.OriginalName = ctr.BaseType;
                     t.Fields.Add(f);
                 }
@@ -89,7 +89,7 @@ namespace XmlSchemaClassGenerator.SQL
             return t;
         }
 
-        private static DataType GetTypeByName(CodeTypeReference ctr)
+        private static DataType GetTypeByName(CodeTypeReference ctr, string nameSpace)
         {
             try
             {
@@ -187,6 +187,18 @@ namespace XmlSchemaClassGenerator.SQL
                         HasTypeError = true
                     };
                 }
+                else if (ctr.BaseType == "System.Xml.Linq.XElement")
+                {
+                    //Objects may indicate errors within the XSD
+                    return new DataType()
+                    {
+                        IsBaseType = true,
+                        IsList = false,
+                        Name = "VARCHAR",
+                        Para1 = 9000,
+                        HasTypeError = false
+                    };
+                }
                 else
                 {
                     //Look for foreign key link
@@ -195,7 +207,7 @@ namespace XmlSchemaClassGenerator.SQL
                         IsBaseType = true,
                         IsList = false,
                         //Name = "OBJECT",
-                        Name = ctr.BaseType
+                        Name = RemoveClassDirective(ctr.BaseType, nameSpace)
                     };
                     //Other needs separate funcitionality to map
                     //variables together
@@ -255,10 +267,15 @@ namespace XmlSchemaClassGenerator.SQL
                     //Objects may indicate errors within the XSD
                     return SQLCondensedDataType.SQL_VARIANT;
                 }
+                else if (ctr.BaseType == "System.Xml.Linq.XElement")
+                {
+                    //Xml fragment that is to be stored as a string
+                    return SQLCondensedDataType.VARCHAR_MAX_;
+                }
                 //else if (ctr.BaseType == "")
                 //{
 
-                //    return SQLDataType.NVARCHAR_MAX_;
+                //    return SQLCondensedDataType.NVARCHAR_MAX_;
                 //}
                 else
                 {
@@ -340,9 +357,6 @@ namespace XmlSchemaClassGenerator.SQL
                 //Recusive function required to loop to bottom key table
                 if (ctr.BaseType.Contains("<") && ctr.BaseType.Contains(">"))
                 {
-                    if (ctd.Name == "SignallingSchemeData")
-                    { }
-
                     string sExtracted = ExtractInListClass(ctr, t.Namespace);
                     
                     Key key = new Key()
@@ -383,11 +397,29 @@ namespace XmlSchemaClassGenerator.SQL
             try
             {
                 s = ctr.BaseType.Substring(ctr.BaseType.IndexOf("<") + 1, ctr.BaseType.IndexOf(">") - ctr.BaseType.IndexOf("<") - 1);
+                s = RemoveClassDirective(s, nameSpace);
+            }
+            catch (Exception ae)
+            {
+                string sE = ae.ToString();
+                if (ae.InnerException != null) sE = ae.InnerException.ToString();
+                return "";
+            }
+            return s;
+        }
+        private static string RemoveClassDirective(string s, string nameSpace)
+        {
+            try
+            {
                 if (s.Contains(nameSpace) && s.Contains("."))
                 {
                     s = s.Replace(nameSpace, "");
                     if (s.Substring(0, 1) == ".")
                     { s = s.Substring(1, s.Length - 1); }
+                }
+                else if (s.Contains("."))
+                {
+                    s = s.Substring(s.LastIndexOf(".") + 1, s.Length - s.LastIndexOf(".") - 1);
                 }
             }
             catch (Exception ae)

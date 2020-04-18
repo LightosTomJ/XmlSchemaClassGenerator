@@ -17,7 +17,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             t.Name = Format.CamelCaseId(ctd.Name);
             t.Namespace = cu.Namespaces[0].Name;
 
-            Field pkF = new Field()
+            Components.Field pkF = new Components.Field()
             {
                 Name = t.Name + "Id",
                 IsPrimary = true,
@@ -79,7 +79,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             t.Fields.Add(pkF);
 
             //Get data values
-            Field f = new Field()
+            Components.Field f = new Components.Field()
             {
                 Name = "Value",
                 IsPrimary = false,

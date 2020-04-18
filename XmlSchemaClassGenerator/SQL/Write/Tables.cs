@@ -20,7 +20,10 @@ namespace XmlSchemaClassGenerator.SQL.Write
             foreach (CodeMemberField cmf in publicFields)
             {
                 string fName = ConvertTypes.GetNameFromCodeMemberField(cmf);
-                Field f = new Field();
+                Components.Field f = new Components.Field();
+
+                //if (fName == "Metadata" && t.Name == "TGlobalElementWithMetadata")
+                //{ }
 
                 if (fName == "Id")
                 {
@@ -32,7 +35,18 @@ namespace XmlSchemaClassGenerator.SQL.Write
                     f.IdentitySpecification = new IdentitySpecification();
                     f.AllowNull = false;
                 }
-                else if (fName.ToUpper() == "ID" || fName.Substring(fName.Length - 2, 2).ToUpper() == "ID")
+                else if (fName.ToUpper() == "ID")
+                {
+                    if (t.Fields.Count(fi => fi.IsPrimary == true) == 0)
+                    {
+                        f.IsPrimary = true;
+                        f.IsClustered = true;
+                        f.IdentitySpecification = new IdentitySpecification();
+                        f.AllowNull = false;
+                    }
+                    fName = Format.CamelCaseId(fName);
+                }
+                else if (fName.Length > 1 && fName.Substring(fName.Length - 2, 2).ToUpper() == "ID")
                 {
                     if (t.Fields.Count(fi => fi.IsPrimary == true) == 0)
                     {

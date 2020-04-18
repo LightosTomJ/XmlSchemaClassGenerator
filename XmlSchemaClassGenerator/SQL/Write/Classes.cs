@@ -78,7 +78,6 @@ namespace XmlSchemaClassGenerator.SQL.Write
             catch (Exception ae)
             {
                 string s = ae.ToString();
-                return null;
             }
             //roleNamespace.Keys = keys;
             return roleNamespace;

@@ -257,8 +257,13 @@ namespace XmlSchemaClassGenerator
             set.CompilationSettings.EnableUpaCheck = EnableUpaCheck;
             set.Compile();
 
-            var m = new ModelBuilder(_configuration, set);
+            ModelBuilder m = new ModelBuilder(_configuration, set);
             var namespaces = m.GenerateCode();
+            if (namespaces.Count() == 0)
+            {
+                CodeNamespace cn = new CodeNamespace("MissingNamespace");
+                namespaces = namespaces.Concat(new[] { cn });
+            }
             if (_configuration.OutputType == Enums.OutputType.CSharp)
             {
                 var writer = _configuration.OutputWriter ?? new FileOutputWriter(OutputFolder ?? ".") { Configuration = _configuration };
