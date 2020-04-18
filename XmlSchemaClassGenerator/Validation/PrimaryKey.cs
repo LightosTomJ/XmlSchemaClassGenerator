@@ -46,7 +46,18 @@ namespace XmlSchemaClassGenerator.Validation
                 SQL.Components.Field f = t.Fields.FirstOrDefault(fs => fs.IsPrimary == true);
                 if (!f.DataType.Name.Contains("INT"))
                 {
-
+                    if (f.DataType.Name == "NVARCHAR")
+                    {
+                        f.DataType.Para1 = 255;
+                    }
+                    else if (f.DataType.Name == "VARCHAR")
+                    {
+                        f.DataType.Para1 = 512;
+                    }
+                    else
+                    {
+                        f.DataType.Para1 = 512;
+                    }
 
                 }
             }
