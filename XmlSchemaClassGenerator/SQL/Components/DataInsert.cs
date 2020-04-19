@@ -7,10 +7,9 @@ namespace XmlSchemaClassGenerator.SQL.Components
     public class DataInsert
     {
         public bool CheckForExisting { get; set; } = false;
-
-        // 'int' can be used as the key regardless of content length as that is stipulated at
-        // schema creation stage
-        public List<KeyValuePair<int, string>> Items { get; set; } = new List<KeyValuePair<int, string>>();
+        public int Position { get; set; }
+        public string ColumnName { get; set; }
+        public string Value { get; set; }
 
         public DataInsert()
         { }

@@ -61,8 +61,11 @@ namespace XmlSchemaClassGenerator.SQL.Write
                     if (t != null) roleNamespace.Schemas.Add(t);
 
                     DataSet ds = Enums.CreateDataSet(ctd, cu, lFieldMembers);
+                    if (ds != null && ds.Entries.Count > 0)
+                    { roleNamespace.Data.Add(ds); }
 
-                    if (roleNamespace.deployScript == null) roleNamespace.deployScript = new DeployScript();
+                    if (roleNamespace.deployScript == null)
+                    { roleNamespace.deployScript = new DeployScript(); }
                     roleNamespace.deployScript.DataTables.Add(t.Name);
                 }
                 else if (ctd.IsClass)
@@ -79,7 +82,7 @@ namespace XmlSchemaClassGenerator.SQL.Write
             {
                 string s = ae.ToString();
             }
-            //roleNamespace.Keys = keys;
+            
             return roleNamespace;
         }
 

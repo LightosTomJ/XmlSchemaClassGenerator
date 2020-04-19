@@ -6,7 +6,7 @@ namespace XmlSchemaClassGenerator.SQL.Components
 {
     public class DeployScript
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = "Script.PostDeployment";
         public List<string> DataTables { get; set; } = new List<string>();
 
         public DeployScript()

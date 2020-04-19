@@ -104,17 +104,12 @@ namespace XmlSchemaClassGenerator.SQL
                 foreach (DBRoles d in dbLocalRoles)
                 {
                     db.Schemas.AddRange(d.Schemas);
-                    //db.Keys.AddRange(d.Keys);
+                    db.Data.AddRange(d.Data);
+                    db.deployScript = d.deployScript;
                 }
 
-
-
                 List<bool> WrittenSuccess = new List<bool>();
-                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFile(dirPath, db));
-
-                ////Clear constraints from namespace
-                ////TODO determine whether cross XSD namespaces have cross constraints
-                //SQL.Write.Classes.constraints.Clear();
+                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFiles(dirPath, db));
             }
             catch (Exception ae)
             {
@@ -164,22 +159,18 @@ namespace XmlSchemaClassGenerator.SQL
                     foreach (DBRoles d in dbLocalRoles)
                     {
                         db.Schemas.AddRange(d.Schemas);
-                        //db.Keys.AddRange(d.Keys);
+                        db.Data.AddRange(d.Data);
+                        db.deployScript = d.deployScript;
                     }
-                    //db.Keys = db.Keys.Distinct().ToList();
+
                     dbRoles.Add(db);
-                    //List<bool> WrittenSuccess = new List<bool>();
-                    //WrittenSuccess.Add(WriteSQLFile(dirPath, db));
                 }
 
                 //Cross check tables and objects for foreign key relationships
                 DBRoles dbOut = Link.MergeNamespaces(dbRoles);
 
                 List<bool> WrittenSuccess = new List<bool>();
-                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFile(OutputDirectory, dbOut));
-
-                //TODO create 'Data' script files from Enums
-                //TODO create 'Deployment' script file linking all data files
+                WrittenSuccess.Add(SQL.Write.Utils.WriteSQLFiles(OutputDirectory, dbOut));
             }
             catch (Exception ae)
             {

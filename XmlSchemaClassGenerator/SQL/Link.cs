@@ -16,12 +16,19 @@ namespace XmlSchemaClassGenerator.SQL
             {
                 List<string> sqlTypes = GetSQLTypes();
                 dbOut.Name = "MergedXSDs";
+
+                //Create new deploy script if current is null
+                if (dbOut.deployScript == null) dbOut.deployScript = new DeployScript();
+
                 foreach (DBRoles db in roles)
                 {
-                    //TODO check that duplicate table names do not exist
                     dbOut.Schemas.AddRange(db.Schemas);
-                    //dbOut.Keys.AddRange(db.Keys);
+                    dbOut.Data.AddRange(db.Data);
+                    if (db.deployScript != null)
+                    { dbOut.deployScript.DataTables.AddRange(db.deployScript.DataTables); }
                 }
+
+                //TODO Determine where 'DeployScript' data is not being passed during DBRole merging
 
                 List<string> tabNames = dbOut.Schemas.Select(s => s.Name).OrderBy(s => s).ToList();
 

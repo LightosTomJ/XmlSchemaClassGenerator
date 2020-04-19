@@ -133,14 +133,17 @@ namespace XmlSchemaClassGenerator.SQL.Write
             DataSet ds = new DataSet();
             ds.Name = Format.CamelCaseId(ctd.Name);
 
-            DataInsert d = new DataInsert();
             foreach (CodeMemberField cm in lFieldMembers)
             {
-                KeyValuePair<int, string> p = new KeyValuePair<int, string>(
-                    lFieldMembers.IndexOf(cm), cm.Name.ToString());
-                d.Items.Add(p);
+                DataInsert d = new DataInsert()
+                {
+                    ColumnName = ctd.Name,
+                    Position = lFieldMembers.IndexOf(cm),
+                    Value = cm.Name
+                };
+
+                ds.Entries.Add(d);
             }
-            ds.Entries.Add(d);
 
             return ds;
         }

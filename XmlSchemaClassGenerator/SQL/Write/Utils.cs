@@ -9,7 +9,31 @@ namespace XmlSchemaClassGenerator.SQL.Write
 {
     public static class Utils
     {
-        public static bool WriteSQLFile(string path, DBRoles db)
+        public static bool WriteSQLFiles(string path, DBRoles db)
+        {
+            try
+            {
+                bool DataCreated = SQLData(path, db);
+                bool DeployCreated = SQLDeployScript(path, db);
+                bool TablesCreated = SQLTables(path, db);
+
+                if (TablesCreated == true && DataCreated == true && DeployCreated == true)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return false;
+        }
+
+        private static bool SQLTables(string path, DBRoles db)
         {
             try
             {
@@ -85,6 +109,84 @@ namespace XmlSchemaClassGenerator.SQL.Write
                         }
                         sw.WriteLine(");");
                         sw.Close();
+                    }
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return true;
+        }
+
+        public static bool SQLData(string path, DBRoles db)
+        {
+            try
+            {
+                //Test for directory
+                if (Directory.Exists(Path.Combine(path, "dbo\\Data\\")) == false)
+                { Directory.CreateDirectory(Path.Combine(path, "dbo\\Data\\")); }
+
+                //Iterate data sets
+                foreach (DataSet ds in db.Data)
+                {
+                    string dataPath = Path.Combine(path, "dbo\\Data\\", ds.Name + ".sql");
+
+                    using (var sw = new StreamWriter(dataPath))
+                    {
+                        //Create seed data 
+                        sw.WriteLine("USE [RenameToRequiredDatabase]");
+                        sw.WriteLine("GO");
+                        sw.WriteLine("");
+
+                        if (ds.IdentityOff == true)
+                        {
+                            sw.WriteLine("SET IDENTITY_INSERT [dbo].[" + ds.Name + "] ON");
+                            sw.WriteLine("GO");
+                        }
+
+                        foreach (DataInsert d in ds.Entries)
+                        {
+                            sw.Write("INSERT [dbo].[" + ds.Name + "] ");
+                            sw.Write("([" + ds.Name + "Id], [Value]) ");
+                            sw.WriteLine("VALUES (" + (d.Position + 1).ToString() + ", N'" + d.Value + "')");
+                            sw.WriteLine("GO");
+                        }
+
+                        if (ds.IdentityOff == true)
+                        {
+                            sw.WriteLine("SET IDENTITY_INSERT [dbo].[" + ds.Name + "] OFF");
+                            sw.WriteLine("GO");
+                        }
+                    }
+                }
+            }
+            catch (Exception ae)
+            {
+                string s = ae.ToString();
+            }
+            return true;
+        }
+
+        public static bool SQLDeployScript(string path, DBRoles db)
+        {
+            try
+            {
+                //Test for directory
+                if (Directory.Exists(Path.Combine(path, "dbo\\Deploy\\")) == false)
+                { Directory.CreateDirectory(Path.Combine(path, "dbo\\Deploy\\")); }
+
+                string dataPath = Path.Combine(path, "dbo\\Deploy\\Script.PostDeployment.sql");
+
+                //Iterate through data names
+                using (var sw = new StreamWriter(dataPath))
+                {
+                    sw.WriteLine("--Auto generated code from XmlSchemaSQLClassGenerator on " + DateTime.Now.ToString("HH:mm dd-MMM-yyyy"));
+                    sw.WriteLine("");
+
+                    foreach (DataSet ds in db.Data)
+                    {
+                        sw.WriteLine(":r ..\\Data\\" + ds.Name + ".sql");
                     }
                 }
             }
